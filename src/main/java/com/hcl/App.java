@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -25,22 +28,13 @@ import java.util.Scanner;
  * 
  */
 public class App {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		// Poor mans banner
 		System.out.println("The Great 4 Operation Calculator ^.^");
+		List<String> opList = new ArrayList<String>(Arrays.asList("+","-","*","/"));
 
-		// create File
-		File myObj = new File("operationsList.txt");
-		try {
-			if (myObj.createNewFile()) {
-				System.out.println("File created: " + myObj.getName());
-			} else {
-				System.out.println("File already exists.");
-			}
-		} catch (IOException e) {
-			System.out.println("An error occurred.");
-			e.printStackTrace();
-		}
+		// create file
+		File myObj = createFile();
 
 		// creates an object of Scanner
 		Scanner input = new Scanner(System.in);
@@ -57,16 +51,20 @@ public class App {
 				while (go) {
 					System.out.println("Please enter an operation from this list. +, -, /, *: ");
 					String operation = input.next();
+					double firstNumber = 0;
+					double secondNumber = 0;				
 
-					System.out.print("Enter first number: ");
-					// takes 1st number
-					int firstNumber = input.nextInt();
+					if(opList.contains(operation)) {
+						System.out.print("Enter first number: ");
+						// takes 1st number
+						firstNumber = input.nextDouble();
 
-					System.out.println("Enter second number: ");
-					// takes 2st number
-					int secondNumber = input.nextInt();
-
-					int result = 0;
+						System.out.println("Enter second number: ");
+						// takes 2st number
+						secondNumber = input.nextDouble();
+					}
+					
+					double result = 0;
 					switch (operation) {
 					case "+":
 						result = add(firstNumber, secondNumber);
@@ -89,106 +87,112 @@ public class App {
 						break;
 					}
 
-					// loops operation menu
-					System.out.println("Would you like to do another operation? input Y or N: ");
-					boolean gogo = true;
-					while (gogo) {
-						String repeat = input.next();
-						if (repeat.toUpperCase().equals("Y")) {
-							gogo = false;
-						} else if (repeat.toUpperCase().equals("N")) {
-							go = false;
-							gogo = false;
-						} else {
-							System.out.println("invalid input, try again. input Y or N: ");
-						}
+					go = menuOperator(input, go,"Would you like to do another operation? input Y or N: ");
+					if(!go) {
+						// loops main menu
+						menu = menuOperator(input, menu,"Would you like to do anything else? input Y or N: ");
 					}
 				}
 				break;
 			case "view":
-				try {
-					Scanner myReader = new Scanner(myObj);
-					while (myReader.hasNextLine()) {
-						String data = myReader.nextLine();
-						System.out.println(data);
-					}
-					myReader.close();
-				} catch (FileNotFoundException e) {
-					System.out.println("An error occurred.");
-					e.printStackTrace();
-				}
+				viewFile(myObj);
+				// loops main menu
+				menu = menuOperator(input, menu,"Would you like to do anything else? input Y or N: ");
 				break;
 			case "quit":
+				menu = false;
 				break;
 			default:
 				System.out.println("Invalid option entered.");
+				// loops main menu
+				menu = menuOperator(input, menu,"Would you like to do anything else? input Y or N: ");
 				break;
 			}
-
-			// loops main menu
-			System.out.println("Would you like to do anything else? input Y or N: ");
-			boolean menuBoolean = true;
-			while (menuBoolean) {
-				String repeat2 = input.next();
-				if (repeat2.toUpperCase().equals("Y")) {
-					menuBoolean = false;
-				} else if (repeat2.toUpperCase().equals("N")) {
-					menu = false;
-					menuBoolean = false;
-				} else {
-					System.out.println("invalid input, try again. input Y or N: ");
-				}
-			}
-
 		}
-
 		// closes the scanner
 		input.close();
 	}
 
-	public static void write(String operation, int firstNumber, int secondNumber, int result) {
+	private static boolean menuOperator(Scanner input, boolean go, String message) {
+		// loops operation menu
+		System.out.println(message);
+		boolean gogo = true;
+		while (gogo) {
+			String repeat = input.next();
+			if (repeat.toUpperCase().equals("Y")) {
+				gogo = false;
+			} else if (repeat.toUpperCase().equals("N")) {
+				go = false;
+				gogo = false;
+			} else {
+				System.out.println("invalid input, try again. input Y or N: ");
+			}
+		}
+		return go;
+	}
+
+	private static File createFile() {
+		// create File
+		File myObj = new File("operationsList.txt");
 		try {
-			FileWriter myWriter = new FileWriter("operationsList.txt", true);
-			myWriter.write(operation + "," + firstNumber + "," + secondNumber + "," + result
-					+ System.getProperty("line.separator"));
-			myWriter.close();
-			System.out.println("Successfully wrote to the file.");
+			if (myObj.createNewFile()) {
+				System.out.println("File created: " + myObj.getName());
+			} else {
+				System.out.println("File already exists.");
+			}
 		} catch (IOException e) {
 			System.out.println("An error occurred.");
 			e.printStackTrace();
 		}
-
+		return myObj;
 	}
 
-	public static int add(int firstNumber, int secondNumber) {
-		// operation add only
-		int sum = firstNumber + secondNumber;
+	private static void viewFile(File myObj) throws FileNotFoundException {
+		try (Scanner myReader = new Scanner(myObj);) {
+			while (myReader.hasNextLine()) {
+				String data = myReader.nextLine();
+				System.out.println(data);
+			}
+		} 
+	}
 
-		System.out.printf("Sum of %d and %d = %d %n", firstNumber, secondNumber, sum);
+	public static void write(String operation, double firstNumber, double secondNumber, double result) throws IOException {
+		try (FileWriter myWriter = new FileWriter("operationsList.txt", true);) {
+			myWriter.write(operation + "," + firstNumber + "," + secondNumber + "," + result
+					+ System.getProperty("line.separator"));
+			System.out.println("Successfully wrote to the file.");
+		}
+	}
+
+	public static double add(double firstNumber, double secondNumber) {
+		// operation add only
+		double sum = firstNumber + secondNumber;
+
+		System.out.printf("Sum of %f and %f = %f %n", firstNumber, secondNumber, sum);
 		return sum;
 	}
 
-	public static int subtract(int firstNumber, int secondNumber) {
+	public static double subtract(double firstNumber, double secondNumber) {
 		// operation add only
-		int difference = firstNumber - secondNumber;
+		double difference = firstNumber - secondNumber;
 
-		System.out.printf("Difference of %d and %d = %d %n", firstNumber, secondNumber, difference);
+		System.out.printf("Difference of %f and %f = %f %n", firstNumber, secondNumber, difference);
 		return difference;
 	}
 
-	public static int divide(int firstNumber, int secondNumber) {
+	public static double divide(double firstNumber, double secondNumber) {
 		// operation add only
-		int quotient = firstNumber / secondNumber;
+		double quotient = firstNumber / secondNumber;
 
-		System.out.printf("Quotient of %d and %d = %d %n", firstNumber, secondNumber, quotient);
+		System.out.printf("Quotient of %f and %f = %f %n", firstNumber, secondNumber, quotient);
 		return quotient;
 	}
 
-	public static int multiply(int firstNumber, int secondNumber) {
+	public static double multiply(double firstNumber, double secondNumber) {
 		// operation add only
-		int product = firstNumber * secondNumber;
+		double product = firstNumber * secondNumber;
 
-		System.out.printf("Product of %d and %d = %d %n", firstNumber, secondNumber, product);
+		System.out.printf("Product of %f and %f = %f %n", firstNumber, secondNumber, product);
 		return product;
 	}
 
